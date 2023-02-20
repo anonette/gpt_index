@@ -1,14 +1,9 @@
 # 🗂️ ️GPT Index (LlamaIndex 🦙)
----
-windows stuff
-```powershell
-real refreshEnv ="$Env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User"
 
-#add c:\tools\miniconda\library\bin
-$env:path += ";C:\tools\miniconda\Library\bin"
+see https://anonette.net/denisaBot/
 
-```
 ---
+
 > ⚠️ **NOTE**: We are rebranding GPT Index as LlamaIndex! We will carry out this transition gradually.
 
 > **2/19/2023**: By default, our docs/notebooks/instructions now use the `llama-index` package. However the `gpt-index` package still exists as a duplicate!
@@ -118,3 +113,15 @@ title = {{GPT Index}},
 url = {https://github.com/jerryjliu/gpt_index},year = {2022}
 }
 ```
+
+
+---
+windows stuff
+```powershell
+real refreshEnv ="$Env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User"
+
+#add c:\tools\miniconda\library\bin
+$env:path += ";C:\tools\miniconda\Library\bin"
+
+```
+---
