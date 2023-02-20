@@ -1,5 +1,14 @@
 # 🗂️ ️GPT Index (LlamaIndex 🦙)
+---
+windows stuff
+```powershell
+real refreshEnv ="$Env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User"
 
+#add c:\tools\miniconda\library\bin
+$env:path += ";C:\tools\miniconda\Library\bin"
+
+```
+---
 > ⚠️ **NOTE**: We are rebranding GPT Index as LlamaIndex! We will carry out this transition gradually.
 
 > **2/27/2022**: We have a duplicate `llama-index` pip package. Simply replace all imports of `gpt_index` with `llama_index` if you choose to `pip install llama-index`.
