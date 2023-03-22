@@ -13,7 +13,7 @@ from gpt_index.readers.schema.base import Document
 class DatabaseReader(BaseReader):
     """Simple Database reader.
 
-    Concatenates each row into Document used by GPT Index.
+    Concatenates each row into Document used by LlamaIndex.
 
     Args:
         sql_database (Optional[SQLDatabase]): SQL database to use,
@@ -91,5 +91,7 @@ class DatabaseReader(BaseReader):
                 result = connection.execute(text(query))
 
             for item in result.fetchall():
-                documents.append(Document(item[0]))
+                # fetch each item
+                doc_str = ", ".join([str(entry) for entry in item])
+                documents.append(Document(doc_str))
         return documents

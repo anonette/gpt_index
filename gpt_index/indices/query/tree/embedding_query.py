@@ -1,7 +1,7 @@
 """Query Tree using embedding similarity between query and node text."""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from gpt_index.data_structs.data_structs import IndexGraph, Node
 from gpt_index.embeddings.base import BaseEmbedding
@@ -9,6 +9,8 @@ from gpt_index.indices.query.schema import QueryBundle
 from gpt_index.indices.query.tree.leaf_query import GPTTreeIndexLeafQuery
 from gpt_index.indices.utils import get_sorted_node_list
 from gpt_index.prompts.prompts import TreeSelectMultiplePrompt, TreeSelectPrompt
+
+logger = logging.getLogger(__name__)
 
 
 class GPTTreeIndexEmbeddingQuery(GPTTreeIndexLeafQuery):
@@ -70,20 +72,23 @@ class GPTTreeIndexEmbeddingQuery(GPTTreeIndexLeafQuery):
         cur_node_list = get_sorted_node_list(cur_nodes)
 
         # Get the node with the highest similarity to the query
-        selected_node, selected_index = self._get_most_similar_node(
+        selected_nodes, selected_indices = self._get_most_similar_nodes(
             cur_node_list, query_bundle
         )
-        logging.debug(
-            f">[Level {level}] Node [{selected_index+1}] Summary text: "
-            f"{' '.join(selected_node.get_text().splitlines())}"
-        )
 
-        # Get the response for the selected node
-        response = self._query_with_selected_node(
-            selected_node, query_bundle, level=level
-        )
+        result_response = None
+        for node, index in zip(selected_nodes, selected_indices):
+            logger.debug(
+                f">[Level {level}] Node [{index+1}] Summary text: "
+                f"{' '.join(node.get_text().splitlines())}"
+            )
 
-        return response
+            # Get the response for the selected node
+            result_response = self._query_with_selected_node(
+                node, query_bundle, level=level, prev_response=result_response
+            )
+
+        return cast(str, result_response)
 
     def _get_query_text_embedding_similarities(
         self, query_bundle: QueryBundle, nodes: List[Node]
@@ -94,28 +99,36 @@ class GPTTreeIndexEmbeddingQuery(GPTTreeIndexLeafQuery):
         Cache the query embedding and the node text embedding.
 
         """
-        query_embedding = self._embed_model.get_agg_embedding_from_queries(
-            query_bundle.embedding_strs
-        )
+        if query_bundle.embedding is None:
+            query_bundle.embedding = self._embed_model.get_agg_embedding_from_queries(
+                query_bundle.embedding_strs
+            )
         similarities = []
         for node in nodes:
-            if node.embedding is not None:
-                text_embedding = node.embedding
-            else:
-                text_embedding = self._embed_model.get_text_embedding(node.get_text())
-                node.embedding = text_embedding
+            if node.embedding is None:
+                node.embedding = self._embed_model.get_text_embedding(node.get_text())
 
-            similarity = self._embed_model.similarity(query_embedding, text_embedding)
+            similarity = self._embed_model.similarity(
+                query_bundle.embedding, node.embedding
+            )
             similarities.append(similarity)
         return similarities
 
-    def _get_most_similar_node(
+    def _get_most_similar_nodes(
         self, nodes: List[Node], query_bundle: QueryBundle
-    ) -> Tuple[Node, int]:
+    ) -> Tuple[List[Node], List[int]]:
         """Get the node with the highest similarity to the query."""
         similarities = self._get_query_text_embedding_similarities(query_bundle, nodes)
 
-        selected_index = similarities.index(max(similarities))
+        selected_nodes: List[Node] = []
+        selected_indices: List[int] = []
+        for node, _ in sorted(
+            zip(nodes, similarities), key=lambda x: x[1], reverse=True
+        ):
+            if len(selected_nodes) < self.child_branch_factor:
+                selected_nodes.append(node)
+                selected_indices.append(nodes.index(node))
+            else:
+                break
 
-        selected_node = nodes[similarities.index(max(similarities))]
-        return selected_node, selected_index
+        return selected_nodes, selected_indices
